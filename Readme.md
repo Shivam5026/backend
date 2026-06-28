@@ -1,4 +1,4 @@
-# Learning Backend from Scartch
+# Learning Backend from Scratch
 
 - from chai aur code by Hitesh Choudhary
 
