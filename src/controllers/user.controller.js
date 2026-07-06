@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
-import { uploadCloudinary } from "../utils/cloudinary.js";
+import { deleteFromCloudinary, uploadCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
@@ -269,21 +269,25 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is missing");
   }
 
-  const avatar = await uploadCloudinary(avatarLocalPath);
+  const newAvatar = await uploadCloudinary(avatarLocalPath);
 
-  if (!avatar.url) {
+  if (!newAvatar) {
     throw new ApiError(400, "Error while uploading on avatar");
   }
 
-  //TODO: create a util to delete old avatars
+  const user = await User.findById(req.user._id);
+
+  if (user.avatar) {
+    await deleteFromCloudinary(user.avatar, "image");
+  }
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: { avatar: avatar.url },
+      $set: { avatar: newAvatar.url },
     },
-    { new: true }
-  ).select("-password");
+    { returnDocument: "after" }
+  ).select("-password -refreshToken");
 
   return res
     .status(200)
@@ -296,19 +300,25 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cover Image file is missing");
   }
 
-  const coverImage = await uploadCloudinary(avatarLocalPath);
+  const newCoverImage = await uploadCloudinary(avatarLocalPath);
 
-  if (!coverImage.url) {
+  if (!newCoverImage) {
     throw new ApiError(400, "Error while uploading on coverImage");
+  }
+
+  const user = await User.findById(req.user._id);
+
+  if (user.coverImage) {
+    await deleteFromCloudinary(user.coverImage, "image");
   }
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: { coverImage: coverImage.url },
+      $set: { coverImage: newCoverImage.url },
     },
-    { new: true }
-  ).select("-password");
+    { returnDocument: "after" }
+  ).select("-password -refreshToken");
 
   return res
     .status(200)
