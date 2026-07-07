@@ -344,7 +344,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Video deleted successfully"));
 });
 
-//NOTE:check before running this toggle
 const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
@@ -365,17 +364,19 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     );
   }
 
-  const publishedStatus = video.isPublished ? true : false;
+  const publishedStatus = !video.isPublished;
 
-  await Video.findByIdAndUpdate(
+  const updatedVideo = await Video.findByIdAndUpdate(
     videoId,
-    { $set: publishedStatus },
+    { $set: { isPublished: publishedStatus } },
     { returnDocument: "after" }
   );
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "Publish status toggled successfully"));
+    .json(
+      new ApiResponse(200, updatedVideo, "Publish status toggled successfully")
+    );
 });
 
 export {
